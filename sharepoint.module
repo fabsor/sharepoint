@@ -9,8 +9,8 @@ function sharepoint_menu() {
  $items = array();
 
   $items['admin/config/services/sharepoint'] = array(
-    'title' => t('Sharepoint'),
-    'description' => t('Sharepoint integration settings.'),
+    'title' => t('SharePoint'),
+    'description' => t('SharePoint integration settings.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('sharepoint_admin_stndsett'),
     'access arguments' => array('administer sharepoint soap module'),
