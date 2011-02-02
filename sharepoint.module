@@ -121,7 +121,7 @@ function sharepoint_admin_lists() {
 
 function sharepoint_sync() {
   $soapClient = sharepoint_get_client('lists');
-  $items = sharepoint_get_splist_items($soapClient, 'Test', 'AllItems');
+  $items = sharepoint_get_splist_items($soapClient, 'Test');
 }
 
 function sharepoint_get_splist_items($client, $listname, $view = '', $query = '', $rowLimit = 10, $queryOptions = NULL, $webId = NULL) {
@@ -129,55 +129,67 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
     'listName' => $listname,
     'view' => $view,
     'query' => $view,
-    'rowLimit' => 1,
+    'rowLimit' => $rowLimit,
     'queryOptions' => $queryOptions,
     'webID' => $webId,
   );
   try {
     $response = $client->GetListItems($parameters);
-    $data = $response->GetListItemsResult->any;
+    // SimpleXML does not support elements with : in them, so we just
+    // strip them out.
+    $data = str_replace(array('rs:', 'z:'),'', $response->GetListItemsResult->any);
     $xml = simplexml_load_string($data);
-    $items = array();
-    foreach ($xml as $item) {
-      var_dump($item);
+
+    // The first item is always the list definition. Let's make that into an object.
+    $list = new stdClass;
+    foreach ($xml->data->attributes() as $key => $value) {
+      $list->{$key} = (string)$value;
     }
+    $items = array();
+    // The rest of the elements are list items. Go through them.
+    foreach ($xml->data->row as $item) {
+      $item_attributes = $item->attributes();
+      $attributes = array();
+      foreach ($item_attributes as $key => $value) {
+        $attributes[$key] = (string) $value;
+      }
+      $items[] = $attributes;
+    }
+    $list->items = $items;
   }
   catch(Exception $exception) {
-  	var_dump($exception);
+  	// Error handling should be handled in a central place instead of here.
   }
+  return  $list;
 }
 
-function getArray($node)
-{
-    $array = false;
-
-    if ($node->hasAttributes())
-    {
-        foreach ($node->attributes as $attr)
-        {
-            $array[$attr->nodeName] = $attr->nodeValue;
-        }
-    }
-
-    if ($node->hasChildNodes())
-    {
-        if ($node->childNodes->length == 1)
-        {
-            $array[$node->firstChild->nodeName] = $node->firstChild->nodeValue;
-        }
-        else
-        {
-            foreach ($node->childNodes as $childNode)
-            {
-                if ($childNode->nodeType != XML_TEXT_NODE)
-                {
-                    $array[$childNode->nodeName][] = $this->getArray($childNode);
-                }
-            }
-        }
-    }
-
-    return $array;
+/**
+* Implementation of hook_feeds_plugins().
+*/
+function sharepoint_feeds_plugins() {
+  $info = array();
+  $path = drupal_get_path('module', 'sharepoint') . '/feeds';
+  $info['sharepoint_view_parser'] = array(
+    'name' => 'SharePoint View Parser',
+    'description' => 'Parses Sharepoint Views.',
+    'handler' => array(
+      'parent' => 'FeedsParser', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'SharePointViewParser',
+      'file' => 'SharePointViewParser.inc',
+      'path' => $path,
+    ),
+  );
+  $info['sharepoint_view_processor'] = array(
+    'name' => 'SharePoint View Processor',
+    'description' => 'Processes Sharepoint Views.',
+    'handler' => array(
+      'parent' => 'FeedsProcessor', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'SharePointViewProcessor',
+      'file' => 'SharePointViewProcessor.inc',
+      'path' => $path,
+    ),
+  );
+  return $info;
 }
 
 function sharepoint_download($file_source, $file_target) {
