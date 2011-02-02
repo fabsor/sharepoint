@@ -153,7 +153,19 @@ function sharepoint_get_client($service) {
   return $soapClient;
 }
 
-function sharepoint_get_list_collection() {
-  $soapClient = sharepoint_get_client('Lists');
+function sharepoint_get_splist_collection($soapClient) {
+  $lists = array();
+  
+  try {
+    $sxml = simplexml_load_string($soapClient->GetListCollection()->GetListCollectionResult->any);
+    foreach ($sxml as $list) {
+      $lists[] = $list->attributes();
+    }
+    return $lists;
+  }
+  catch(SoapFault $fault) {
+  	echo 'Fault code: '.$fault->faultcode;
+  	echo 'Fault string: '.$fault->faultstring;
+  }
 }
 
