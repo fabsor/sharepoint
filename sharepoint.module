@@ -98,31 +98,12 @@ function sharepoint_admin_lists() {
 
 function sharepoint_sync() {
   $soapClient = sharepoint_get_client('lists');
-  
+
   //Calling the GetListItems Web Service
   $rawXMLresponse = null;
 
-//Authentication details
-$authParams = array('login' => variable_get('sharepoint_username',''),
-					'password' => variable_get('sharepoint_password',''),
-					'trace' => 1
-					);
-
-
-					
-/* Path to the Lists.asmx WSDL file */
-$wsdl = variable_get('sharepoint_serviceurl','').'?WSDL';
-
-//Creating the SOAP client and initializing the GetListItems method parameters
-$soapClient = new SoapClient($wsdl, $authParams);
-
-//Calling the GetListItems Web Service
-$rawXMLresponse = null;
-
 try{
-	
 	$rawXMLresponse = $soapClient->GetListItems(new SoapVar('<ns1:GetListItems><ns1:listName>'.variable_get('sharepoint_listname', '').'</ns1:listName><ns1:viewFields><ViewFields xmlns=""/></ns1:viewFields><ns1:query><Query xmlns="">'.variable_get('sharepoint_CAMLquery','').'</Query></ns1:query><ns1:rowLimit>150</ns1:rowLimit><ns1:queryOptions><QueryOptions xmlns=""><ViewAttributes Scope="RecursiveAll" IncludeRootFolder="True"/></QueryOptions></ns1:queryOptions></ns1:GetListItems>', XSD_ANYXML))->GetListItemsResult->any;;
-
 	}
 catch(SoapFault $fault){
 	echo 'Fault code: '.$fault->faultcode;
@@ -132,17 +113,22 @@ catch(SoapFault $fault){
 $dom = new DOMDocument();
 $dom->loadXML($rawXMLresponse);
   try{
-
-  	$rawXMLresponse = $soapClient->GetListItems(new SoapVar('<ns1:GetListItems><ns1:listName>'.variable_get('sharepoint_listname', '').'</ns1:listName><ns1:viewFields><ViewFields xmlns=""/></ns1:viewFields><ns1:query><Query xmlns="">'.variable_get('sharepoint_CAMLquery','').'</Query></ns1:query><ns1:rowLimit>150</ns1:rowLimit><ns1:queryOptions><QueryOptions xmlns=""><ViewAttributes Scope="RecursiveAll" IncludeRootFolder="True"/></QueryOptions></ns1:queryOptions></ns1:GetListItems>', XSD_ANYXML))->GetListItemsResult->any;;
-
-  	}
+    $listname = variable_get('sharepoint_listname', '');
+    $list_item_command = array(
+        'listName' => $listname,
+        'view' => '',
+        'query' => '',
+        'rowLimit' => 15,
+        'queryOptions' => '',
+        'webID' => '');
+  	$rawXMLresponse = $soapClient->GetListItems($list_item_command);
+  }
   catch(SoapFault $fault){
   	echo 'Fault code: '.$fault->faultcode;
   	echo 'Fault string: '.$fault->faultstring;
   	var_dump($fault);
   }
-
-  $dom = new DOMDocument();
+ $dom = new DOMDocument();
   $dom->loadXML($rawXMLresponse);
 $results = $dom->getElementsByTagNameNS("#RowsetSchema", "*");
 foreach($results as $result){
