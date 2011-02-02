@@ -98,58 +98,28 @@ function sharepoint_admin_lists() {
 
 function sharepoint_sync() {
   $soapClient = sharepoint_get_client('lists');
-
-  //Calling the GetListItems Web Service
-  $rawXMLresponse = null;
-
-try{
-	$rawXMLresponse = $soapClient->GetListItems(new SoapVar('<ns1:GetListItems><ns1:listName>'.variable_get('sharepoint_listname', '').'</ns1:listName><ns1:viewFields><ViewFields xmlns=""/></ns1:viewFields><ns1:query><Query xmlns="">'.variable_get('sharepoint_CAMLquery','').'</Query></ns1:query><ns1:rowLimit>150</ns1:rowLimit><ns1:queryOptions><QueryOptions xmlns=""><ViewAttributes Scope="RecursiveAll" IncludeRootFolder="True"/></QueryOptions></ns1:queryOptions></ns1:GetListItems>', XSD_ANYXML))->GetListItemsResult->any;;
-	}
-catch(SoapFault $fault){
-	echo 'Fault code: '.$fault->faultcode;
-	echo 'Fault string: '.$fault->faultstring;
+  $items = sharepoint_get_splist_items($soapClient, 'Test', 'AllItems');
 }
-	
-$dom = new DOMDocument();
-$dom->loadXML($rawXMLresponse);
-  try{
-    $listname = variable_get('sharepoint_listname', '');
-    $list_item_command = array(
-        'listName' => $listname,
-        'view' => '',
-        'query' => '',
-        'rowLimit' => 15,
-        'queryOptions' => '',
-        'webID' => '');
-  	$rawXMLresponse = $soapClient->GetListItems($list_item_command);
-  }
-  catch(SoapFault $fault){
-  	echo 'Fault code: '.$fault->faultcode;
-  	echo 'Fault string: '.$fault->faultstring;
-  	var_dump($fault);
-  }
- $dom = new DOMDocument();
-  $dom->loadXML($rawXMLresponse);
-$results = $dom->getElementsByTagNameNS("#RowsetSchema", "*");
-foreach($results as $result){
-	echo 'file link='.$result->getAttribute("ows_EncodedAbsUrl")."<br/>";
-	echo 'title='.$result->getAttribute("ows_LinkFilename")."<br/>";
-//	ows_Modified
-//	ows_UniqueId
-// ows_BaseName
-	$file = $_SERVER['DOCUMENT_ROOT'] . base_path(). file_directory_path()."/".$result->getAttribute("ows_LinkFilename");
-	$url = $result->getAttribute("ows_EncodedAbsUrl");
-	$e_url = explode(':',$url);
-	$download_url = "http://".urlencode(variable_get('sharepoint_username','')).":".urlencode(variable_get('sharepoint_password',''))."@".substr($e_url[1],2);
-	echo "download=".$download_url." to ".$file;
-	echo "Result=".sharepoint_download($download_url,$file);
-}
-unset($soapClient);
 
+function sharepoint_get_splist_items($client, $listname, $view = '', $query = '', $rowLimit = 10, $queryOptions = NULL, $webId = NULL) {
+  $list_item_command = array(
+    'listName' => $listname,
+    'view' => $view,
+    'query' => $view,
+    'rowLimit' => 15,
+    'queryOptions' => $queryOptions,
+    'webID' => $webId,
+  );
+  $item_response = $client->GetListItems($list_item_command);
+  $items = simplexml_load_string($item_response->GetListItemsResult->any);
+  echo $item_response->GetListItemsResult->any;
+  foreach($items->children() as $item) {
+    var_dump($item);
+  }
 }
 
 function sharepoint_download($file_source, $file_target) {
-        $rh = fopen($file_source, 'rb');
+       $rh = fopen($file_source, 'rb');
         $wh = fopen($file_target, 'wb');
         if ($rh===false || $wh===false) {
 			// error reading or opening file
