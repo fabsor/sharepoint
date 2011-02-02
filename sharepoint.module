@@ -173,19 +173,19 @@ function sharepoint_feeds_plugins() {
     'name' => 'SharePoint View Parser',
     'description' => 'Parses Sharepoint Views.',
     'handler' => array(
-      'parent' => 'FeedsParser', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'parent' => 'FeedsParser',
       'class' => 'SharePointViewParser',
       'file' => 'SharePointViewParser.inc',
       'path' => $path,
     ),
   );
-  $info['sharepoint_view_processor'] = array(
-    'name' => 'SharePoint View Processor',
-    'description' => 'Processes Sharepoint Views.',
+  $info['sharepoint_view_fetcher'] = array(
+    'name' => 'SharePoint View Fetcher',
+    'description' => 'Fetches Sharepoint Views.',
     'handler' => array(
-      'parent' => 'FeedsProcessor', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
-      'class' => 'SharePointViewProcessor',
-      'file' => 'SharePointViewProcessor.inc',
+      'parent' => 'FeedsFetcher', // A plugin needs to derive either directly or indirectly from FeedsFetcher, FeedsParser or FeedsProcessor.
+      'class' => 'SharePointViewFetcher',
+      'file' => 'SharePointViewFetcher.inc',
       'path' => $path,
     ),
   );
