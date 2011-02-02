@@ -86,15 +86,14 @@ $authParams = array('login' => variable_get('sharepoint_username',''),
 					'trace' => 1
 					);
 
-							
+
 					
 /* Path to the Lists.asmx WSDL file */
 $wsdl = variable_get('sharepoint_serviceurl','').'?WSDL';
 
 //Creating the SOAP client and initializing the GetListItems method parameters
 $soapClient = new SoapClient($wsdl, $authParams);
-			
-				
+
 //Calling the GetListItems Web Service
 $rawXMLresponse = null;
 
@@ -106,7 +105,6 @@ try{
 catch(SoapFault $fault){
 	echo 'Fault code: '.$fault->faultcode;
 	echo 'Fault string: '.$fault->faultstring;
-	var_dump($fault);
 }
 	
 $dom = new DOMDocument();
@@ -118,48 +116,12 @@ foreach($results as $result){
 //	ows_Modified
 //	ows_UniqueId
 // ows_BaseName
-	
 	$file = $_SERVER['DOCUMENT_ROOT'] . base_path(). file_directory_path()."/".$result->getAttribute("ows_LinkFilename");
 	$url = $result->getAttribute("ows_EncodedAbsUrl");
 	$e_url = explode(':',$url);
 	$download_url = "http://".urlencode(variable_get('sharepoint_username','')).":".urlencode(variable_get('sharepoint_password',''))."@".substr($e_url[1],2);
 	echo "download=".$download_url." to ".$file;
 	echo "Result=".sharepoint_download($download_url,$file);
-
-   // Get the file size
-    $details = stat($file);
-    $filesize = $details['size'];
-    $name = basename($file);
-
-    // Build the file object
-    $file_obj = new stdClass();
-    $file_obj->filename = $name;
-    $file_obj->filepath = $result->getAttribute("ows_LinkFilename");;
-    $file_obj->filemime =  file_get_mimetype($name);
-    $file_obj->filesize = $filesize;
-    $file_obj->filesource = $name;
-    // You can change this to the UID you want
-    $file_obj->uid = 1;
-    $file_obj->status = FILE_STATUS_TEMPORARY;
-    $file_obj->timestamp = time();
-    $file_obj->list = 1;
-    $file_obj->new = true;
-
-    // Save file to files table
-    drupal_write_record('files', $file_obj);
-
-    // change file status to permanent
-    file_set_status($file_obj,1);
-
-	// Construct the new node object.
-	$node = new stdClass();
-	$node->title = $result->getAttribute("ows_BaseName");
-	$node->files[$file_obj->fid] = $file_obj;
-	$node->type = 'sharepoint_document';
-
-	node_save($node);	
-
-
 }
 unset($soapClient);
 
