@@ -189,10 +189,15 @@ function sharepoint_get_client($service) {
   					);
 
   /* Path to the Lists.asmx WSDL file */
-  $wsdl = variable_get('sharepoint_serviceurl','').'/'.$service.'?WSDL';
-
+  $wsdl = variable_get('sharepoint_serviceurl','').'/'.$service.'.asmx?WSDL';
+  
   //Creating the SOAP client and initializing the GetListItems method parameters
   $soapClient = new SoapClient($wsdl, $authParams);
 
   return $soapClient;
 }
+
+function sharepoint_get_list_collection() {
+  $soapClient = sharepoint_get_client('Lists');
+}
+
