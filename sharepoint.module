@@ -8,9 +8,9 @@ function sharepoint_perm() {
 function sharepoint_menu() {
  $items = array();
 
-  $items['admin/config/sharepoint'] = array(
-    'title' => t('sharepoint'),
-    'description' => t('Settings'),
+  $items['admin/config/services/sharepoint'] = array(
+    'title' => t('Sharepoint'),
+    'description' => t('Sharepoint integration settings.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('sharepoint_admin_stndsett'),
     'access arguments' => array('administer sharepoint soap module'),
