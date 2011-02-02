@@ -75,15 +75,38 @@ function sharepoint_admin_stndsett() {
 }
 
 function sharepoint_admin_lists() {
+  $client = sharepoint_get_client('lists');
+  $lists = sharepoint_get_splist_collection($client);
+  foreach ($lists as $id => $list) {
+    $options[$id] = $list['Title'];
+  }
+
   $form['sharepoint_listname'] = array(
-    '#type' => 'textfield',
+    '#type' => 'select',
     '#title' => t('List Name'),
     '#default_value' =>  variable_get('sharepoint_listname', ''),
-    '#size' => 100,
-    '#maxlength' => 100,
+    '#options' => $options,
     '#description' => t('The name of the List you want to publish on your site'),
   );
  
+  $form['sharepoint_view'] = array(
+    '#type' => 'textfield',
+    '#title' => t('View'),
+    '#default_value' =>  variable_get('sharepoint_view', ''),
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#description' => t('The name of the view to use'),
+  );
+  
+  $form['sharepoint_num_records'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of records'),
+    '#default_value' =>  variable_get('sharepoint_num_records', ''),
+    '#size' => 5,
+    '#maxlength' => 5,
+    '#description' => t('The number of records to retrieve'),
+  );
+  
   $form['sharepoint_CAMLquery'] = array(
     '#type' => 'textarea',
     '#title' => t('CAML query (optional)'),
@@ -192,13 +215,21 @@ function sharepoint_get_client($service) {
   return $soapClient;
 }
 
-function sharepoint_get_splist_collection($soapClient) {
+function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   $lists = array();
   
   try {
     $sxml = simplexml_load_string($soapClient->GetListCollection()->GetListCollectionResult->any);
     foreach ($sxml as $list) {
-      $lists[] = $list->attributes();
+      $list_attributes = $list->attributes();
+      $hidden = (string) $list_attributes->Hidden;
+      if (($show_hidden && $hidden == 'True') || $hidden == 'False') {
+        $attributes = array();
+        foreach ($list_attributes as $key => $value) {
+          $attributes[$key] = (string) $value;
+        }
+        $lists[$attributes['ID']] = $attributes;
+      }
     }
     return $lists;
   }
