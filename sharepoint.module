@@ -75,12 +75,17 @@ function sharepoint_admin_stndsett() {
 }
 
 function sharepoint_admin_lists() {
+  $client = sharepoint_get_client('lists');
+  $lists = sharepoint_get_splist_collection($client);
+  foreach ($lists as $id => $list) {
+    $options[$id] = $list['Title'];
+  }
+
   $form['sharepoint_listname'] = array(
-    '#type' => 'textfield',
+    '#type' => 'select',
     '#title' => t('List Name'),
     '#default_value' =>  variable_get('sharepoint_listname', ''),
-    '#size' => 100,
-    '#maxlength' => 100,
+    '#options' => $options,
     '#description' => t('The name of the List you want to publish on your site'),
   );
  
@@ -189,7 +194,11 @@ function sharepoint_get_splist_collection($soapClient) {
   try {
     $sxml = simplexml_load_string($soapClient->GetListCollection()->GetListCollectionResult->any);
     foreach ($sxml as $list) {
-      $lists[] = $list->attributes();
+      $attributes = array();
+      foreach ($list->attributes() as $key => $value) {
+        $attributes[$key] = (string) $value;
+      }
+      $lists[$attributes['ID']] = $attributes;
     }
     return $lists;
   }
