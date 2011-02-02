@@ -89,6 +89,24 @@ function sharepoint_admin_lists() {
     '#description' => t('The name of the List you want to publish on your site'),
   );
  
+  $form['sharepoint_view'] = array(
+    '#type' => 'textfield',
+    '#title' => t('View'),
+    '#default_value' =>  variable_get('sharepoint_view', ''),
+    '#size' => 30,
+    '#maxlength' => 30,
+    '#description' => t('The name of the view to use'),
+  );
+  
+  $form['sharepoint_num_records'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of records'),
+    '#default_value' =>  variable_get('sharepoint_num_records', ''),
+    '#size' => 5,
+    '#maxlength' => 5,
+    '#description' => t('The number of records to retrieve'),
+  );
+  
   $form['sharepoint_CAMLquery'] = array(
     '#type' => 'textarea',
     '#title' => t('CAML query (optional)'),
@@ -188,17 +206,21 @@ function sharepoint_get_client($service) {
   return $soapClient;
 }
 
-function sharepoint_get_splist_collection($soapClient) {
+function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   $lists = array();
   
   try {
     $sxml = simplexml_load_string($soapClient->GetListCollection()->GetListCollectionResult->any);
     foreach ($sxml as $list) {
-      $attributes = array();
-      foreach ($list->attributes() as $key => $value) {
-        $attributes[$key] = (string) $value;
+      $list_attributes = $list->attributes();
+      $hidden = (string) $list_attributes->Hidden;
+      if (($show_hidden && $hidden == 'True') || $hidden == 'False') {
+        $attributes = array();
+        foreach ($list_attributes as $key => $value) {
+          $attributes[$key] = (string) $value;
+        }
+        $lists[$attributes['ID']] = $attributes;
       }
-      $lists[$attributes['ID']] = $attributes;
     }
     return $lists;
   }
