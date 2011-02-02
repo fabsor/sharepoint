@@ -1,0 +1,5 @@
+; $Id$
+name = Sharepoint Integration
+description = "Provides methods to communicate with a sharepoint portal and download document information"
+core = 7.x
+dependencies[] = field

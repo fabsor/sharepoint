@@ -1,0 +1,191 @@
+<?php
+// $Id$
+
+function sharepoint_perm() {
+  return array('access sharepoint soap module', 'administer sharepoint soap module');
+}
+
+function sharepoint_menu() {
+ $items = array();
+
+  $items['admin/config/sharepoint'] = array(
+    'title' => t('sharepoint'),
+    'description' => t('Settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sharepoint_admin_stndsett'),
+    'access arguments' => array('administer sharepoint soap module'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  $items['sharepoint'] = array(
+    'title' => t('Sharepoint Test Page'),
+    //'description' => t('Page for testing the connection with the sharepoint bus'),
+    'page callback' => 'sharepoint_sync',
+    'access arguments' => user_access('access sharepoint soap module'),
+    'type' => MENU_CALLBACK,
+    );
+  
+  return $items;
+}
+
+function sharepoint_admin_stndsett() {
+$form['sharepoint_serviceurl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Service URL'),
+    '#default_value' =>  variable_get('sharepoint_serviceurl', ''),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t('The fully qualified URL to the sharepoint service bus'),
+  );
+
+  $form['sharepoint_listname'] = array(
+    '#type' => 'textfield',
+    '#title' => t('List Name'),
+    '#default_value' =>  variable_get('sharepoint_listname', ''),
+    '#size' => 100,
+    '#maxlength' => 100,
+    '#description' => t('The name of the List you want to publish on your site'),
+  );
+
+ 
+  $form['sharepoint_username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Username'),
+    '#default_value' =>  variable_get('sharepoint_username', ''),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t('The username for the sharepoint webservice'),
+  );
+  
+  $form['sharepoint_password'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Password'),
+    '#default_value' =>  variable_get('sharepoint_password', ''),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t('The password for the sharepoint webservice'),
+  );
+
+  $form['sharepoint_CAMLquery'] = array(
+    '#type' => 'textarea',
+    '#title' => t('CAML query (optional)'),
+    '#default_value' =>  variable_get('sharepoint_CAMLquery', ''),
+    '#rows' => 10,
+    '#maxlength' => 300,
+    '#description' => t('An optional CAML query to filter the list items. Leave empty to get all list items.'),
+  );
+  
+  return system_settings_form($form);
+}
+
+function sharepoint_sync() {
+
+//Authentication details
+$authParams = array('login' => variable_get('sharepoint_username',''),
+					'password' => variable_get('sharepoint_password',''),
+					'trace' => 1
+					);
+
+							
+					
+/* Path to the Lists.asmx WSDL file */
+$wsdl = variable_get('sharepoint_serviceurl','').'?WSDL';
+
+//Creating the SOAP client and initializing the GetListItems method parameters
+$soapClient = new SoapClient($wsdl, $authParams);
+			
+				
+//Calling the GetListItems Web Service
+$rawXMLresponse = null;
+
+try{
+	
+	$rawXMLresponse = $soapClient->GetListItems(new SoapVar('<ns1:GetListItems><ns1:listName>'.variable_get('sharepoint_listname', '').'</ns1:listName><ns1:viewFields><ViewFields xmlns=""/></ns1:viewFields><ns1:query><Query xmlns="">'.variable_get('sharepoint_CAMLquery','').'</Query></ns1:query><ns1:rowLimit>150</ns1:rowLimit><ns1:queryOptions><QueryOptions xmlns=""><ViewAttributes Scope="RecursiveAll" IncludeRootFolder="True"/></QueryOptions></ns1:queryOptions></ns1:GetListItems>', XSD_ANYXML))->GetListItemsResult->any;;
+
+	}
+catch(SoapFault $fault){
+	echo 'Fault code: '.$fault->faultcode;
+	echo 'Fault string: '.$fault->faultstring;
+	var_dump($fault);
+}
+	
+$dom = new DOMDocument();
+$dom->loadXML($rawXMLresponse);
+$results = $dom->getElementsByTagNameNS("#RowsetSchema", "*");
+foreach($results as $result){
+	echo 'file link='.$result->getAttribute("ows_EncodedAbsUrl")."<br/>";
+	echo 'title='.$result->getAttribute("ows_LinkFilename")."<br/>";
+//	ows_Modified
+//	ows_UniqueId
+// ows_BaseName
+	
+	$file = $_SERVER['DOCUMENT_ROOT'] . base_path(). file_directory_path()."/".$result->getAttribute("ows_LinkFilename");
+	$url = $result->getAttribute("ows_EncodedAbsUrl");
+	$e_url = explode(':',$url);
+	$download_url = "http://".urlencode(variable_get('sharepoint_username','')).":".urlencode(variable_get('sharepoint_password',''))."@".substr($e_url[1],2);
+	echo "download=".$download_url." to ".$file;
+	echo "Result=".sharepoint_download($download_url,$file);
+
+   // Get the file size
+    $details = stat($file);
+    $filesize = $details['size'];
+    $name = basename($file);
+
+    // Build the file object
+    $file_obj = new stdClass();
+    $file_obj->filename = $name;
+    $file_obj->filepath = $result->getAttribute("ows_LinkFilename");;
+    $file_obj->filemime =  file_get_mimetype($name);
+    $file_obj->filesize = $filesize;
+    $file_obj->filesource = $name;
+    // You can change this to the UID you want
+    $file_obj->uid = 1;
+    $file_obj->status = FILE_STATUS_TEMPORARY;
+    $file_obj->timestamp = time();
+    $file_obj->list = 1;
+    $file_obj->new = true;
+
+    // Save file to files table
+    drupal_write_record('files', $file_obj);
+
+    // change file status to permanent
+    file_set_status($file_obj,1);
+
+	// Construct the new node object.
+	$node = new stdClass();
+	$node->title = $result->getAttribute("ows_BaseName");
+	$node->files[$file_obj->fid] = $file_obj;
+	$node->type = 'sharepoint_document';
+
+	node_save($node);	
+
+
+}
+unset($soapClient);
+
+}
+
+function sharepoint_download($file_source, $file_target) {
+        $rh = fopen($file_source, 'rb');
+        $wh = fopen($file_target, 'wb');
+        if ($rh===false || $wh===false) {
+			// error reading or opening file
+           return true;
+        }
+        while (!feof($rh)) {
+            if (fwrite($wh, fread($rh, 1024)) === FALSE) {
+                   // 'Download error: Cannot write to file ('.$file_target.')';
+                   return true;
+               }
+        }
+        fclose($rh);
+        fclose($wh);
+        // No error
+        return false;
+    }
+
+
+
+
+
+?>
