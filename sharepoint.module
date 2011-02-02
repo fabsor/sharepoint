@@ -102,20 +102,59 @@ function sharepoint_sync() {
 }
 
 function sharepoint_get_splist_items($client, $listname, $view = '', $query = '', $rowLimit = 10, $queryOptions = NULL, $webId = NULL) {
-  $list_item_command = array(
+  $parameters = array(
     'listName' => $listname,
     'view' => $view,
     'query' => $view,
-    'rowLimit' => 15,
+    'rowLimit' => 1,
     'queryOptions' => $queryOptions,
     'webID' => $webId,
   );
-  $item_response = $client->GetListItems($list_item_command);
-  $items = simplexml_load_string($item_response->GetListItemsResult->any);
-  echo $item_response->GetListItemsResult->any;
-  foreach($items->children() as $item) {
-    var_dump($item);
+  try {
+    $response = $client->GetListItems($parameters);
+    $data = $response->GetListItemsResult->any;
+    $xml = simplexml_load_string($data);
+    $items = array();
+    foreach ($xml as $item) {
+      var_dump($item);
+    }
   }
+  catch(Exception $exception) {
+  	var_dump($exception);
+  }
+}
+
+function getArray($node)
+{
+    $array = false;
+
+    if ($node->hasAttributes())
+    {
+        foreach ($node->attributes as $attr)
+        {
+            $array[$attr->nodeName] = $attr->nodeValue;
+        }
+    }
+
+    if ($node->hasChildNodes())
+    {
+        if ($node->childNodes->length == 1)
+        {
+            $array[$node->firstChild->nodeName] = $node->firstChild->nodeValue;
+        }
+        else
+        {
+            foreach ($node->childNodes as $childNode)
+            {
+                if ($childNode->nodeType != XML_TEXT_NODE)
+                {
+                    $array[$childNode->nodeName][] = $this->getArray($childNode);
+                }
+            }
+        }
+    }
+
+    return $array;
 }
 
 function sharepoint_download($file_source, $file_target) {
