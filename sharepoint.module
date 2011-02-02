@@ -97,7 +97,7 @@ function sharepoint_admin_lists() {
 }
 
 function sharepoint_sync() {
-  $soapClient = sharepoint_get_client();
+  $soapClient = sharepoint_get_client('List.asmx');
   
   //Calling the GetListItems Web Service
   $rawXMLresponse = null;
@@ -189,7 +189,7 @@ function sharepoint_download($file_source, $file_target) {
         return false;
     }
 
-function sharepoint_get_client() {
+function sharepoint_get_client($service) {
   //Authentication details
   $authParams = array('login' => variable_get('sharepoint_username',''),
   					'password' => variable_get('sharepoint_password',''),
@@ -197,7 +197,7 @@ function sharepoint_get_client() {
   					);
 
   /* Path to the Lists.asmx WSDL file */
-  $wsdl = variable_get('sharepoint_serviceurl','').'?WSDL';
+  $wsdl = variable_get('sharepoint_serviceurl','').'/'.$service.'?WSDL';
 
   //Creating the SOAP client and initializing the GetListItems method parameters
   $soapClient = new SoapClient($wsdl, $authParams);
