@@ -97,7 +97,7 @@ function sharepoint_admin_lists() {
 }
 
 function sharepoint_sync() {
-  $soapClient = sharepoint_get_client('List.asmx');
+  $soapClient = sharepoint_get_client('lists');
   
   //Calling the GetListItems Web Service
   $rawXMLresponse = null;
