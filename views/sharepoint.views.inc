@@ -30,11 +30,14 @@ function sharepoint_views_data() {
     ),
   );
 
-  $data['sharepoint']['ows_LinkFilename'] = array(
-    'title' => t('Filename'),
-    'help' => t('The file name of this list item.'),
+  $data['sharepoint']['sharepoint_field'] = array(
+    'title' => t('Sharepoint field'),
+    'help' => t('A field from the remote Sharepoint list.'),
     'field' => array(
       'handler' => 'views_handler_field_sharepoint',
+      'sharepoint' => array(
+        'real field' => '',
+      ),
     ),
   );
 

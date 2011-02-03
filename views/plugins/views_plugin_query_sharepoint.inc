@@ -11,16 +11,12 @@
  */
 class views_plugin_query_sharepoint extends views_plugin_query {
  
-  // Our argument array. Anything that needs to be passed to the API gets
-  // added to this array through the argumet and filter handlers. This array
-  // then gets passed to url() along with $api_url and becomes the query 
-  // string. 
-  var $args;
-  
-  /**
+   /**
    * Constructor; Create the basic query object and fill with default values.
    */
-  function init($base_table, $base_field) { }
+  function init($base_table, $base_field, $options) {
+    parent::init($base_table, $base_field, $options);
+  }
 
   function use_pager() {
     return FALSE;
@@ -45,8 +41,19 @@ class views_plugin_query_sharepoint extends views_plugin_query {
   function execute(&$view) {
     $start = microtime();
     
-    $client = sharepoint_get_client('lists');
-    $items = sharepoint_get_splist_items($client, 'Test');
+    //Authentication details
+    $authParams = array('login' => 'contoso\Administrator',
+    					'password' => 'pass@word1',
+    					'trace' => 1
+    					);
+
+    /* Path to the Lists.asmx WSDL file */
+    $wsdl = $this->options['sharepoint_views_server_url'].'/Lists.asmx?WSDL';
+
+    //Creating the SOAP client and initializing the GetListItems method parameters
+    $client = new SoapClient($wsdl, $authParams);
+
+    $items = sharepoint_get_splist_items($client, 'Test lib');
     
     foreach ($items->items as $key => $item) {
       $view->result[$key] = (object) $item;
@@ -64,13 +71,13 @@ class views_plugin_query_sharepoint extends views_plugin_query {
   function option_definition() {
     $options = parent::option_definition();
     $options['sharepoint_views_server_url'] = array(
-      'default' => '',
+      'default' => 'test',
     );
     $options['sharepoint_views_list_name'] = array(
-      'default' => '',
+      'default' => 'test',
     );
-    $options['sharepoint_list_view'] = array(
-      'default' => '',
+    $options['sharepoint_views_list_view'] = array(
+      'default' => 'test',
     );
 
     return $options;
@@ -98,13 +105,17 @@ class views_plugin_query_sharepoint extends views_plugin_query {
       '#description' => t('The name of the list whose data you want to retrieve'),
     );
 
-    $form['sharepoint_server_view'] = array(
+    $form['sharepoint_views_list_view'] = array(
       '#type' => 'textfield',
       '#title' => t('View'),
-      '#default_value' => $this->options['sharepoint_views_view'],
+      '#default_value' => $this->options['sharepoint_views_list_view'],
       '#size' => 30,
       '#maxlength' => 30,
       '#description' => t('The name of the view you wish to use. If not specified the default view will be used.'),
     );
+  }
+
+  function options_submit(&$form, &$form_state) { 
+    views_invalidate_cache();  
   }
 }

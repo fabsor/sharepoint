@@ -158,8 +158,9 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
     }
     $list->items = $items;
   }
-  catch(Exception $exception) {
-  	// Error handling should be handled in a central place instead of here.
+	catch(SoapFault $fault) {
+  	echo 'Fault code: '.$fault->faultcode;
+  	echo 'Fault string: '.$fault->faultstring;
   }
   return  $list;
 }
