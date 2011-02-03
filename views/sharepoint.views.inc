@@ -30,9 +30,9 @@ function sharepoint_views_data() {
     ),
   );
 
-  $data['sharepoint']['title'] = array(
-    'title' => t('Title'),
-    'help' => t('The title of this list item.'),
+  $data['sharepoint']['ows_LinkFilename'] = array(
+    'title' => t('Filename'),
+    'help' => t('The file name of this list item.'),
     'field' => array(
       'handler' => 'views_handler_field_sharepoint',
     ),
