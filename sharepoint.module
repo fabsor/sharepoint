@@ -40,6 +40,7 @@ function sharepoint_menu() {
     'type' => MENU_CALLBACK,
     );
 
+		// This item should be removed when the search hooks is working
 		$items['sharepoint/search'] = array(
     'title' => t('Sharepoint Search Page'),
     //'description' => t('Page for testing the connection with the sharepoint bus'),
@@ -129,7 +130,8 @@ function sharepoint_admin_lists() {
 
 function sharepoint_sync() {
   $soapClient = sharepoint_get_client('lists');
-  $items = sharepoint_get_splist_items($soapClient, 'Test');
+  $info = sharepoint_get_splist_info($soapClient, 'Test', '');
+  var_dump($info);
 }
 
 function sharepoint_get_splist_items($client, $listname, $view = '', $query = '', $rowLimit = 10, $queryOptions = NULL, $webId = NULL) {
@@ -172,8 +174,59 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
 }
 
 /**
-* Implementation of hook_feeds_plugins().
-*/
+ * Get information for a list.
+ * You can optionally pass in  view and get data for just the view.
+ */
+function sharepoint_get_splist_info($client, $list, $view = '') {
+  $data = $client->GetListAndView(array('listName' => $list, 'viewName' => $view));
+  $xml = simplexml_load_string($data->GetListAndViewResult->any);
+  $list_info = new stdClass;
+  $list_info->list_field_info = _sharepoint_traverse_field_info($xml->List->Fields->Field);
+  $list_info->list_info['RegionalSettings'] = array();
+  foreach ($xml->List->RegionalSettings[0] as $key => $setting) {
+    $list_info->list_info['RegionalSettings'][$key] = _sharepoint_get_value($setting);
+  }
+  $list_info->list_info['ServerSettings'] = array();
+  foreach ($xml->List->ServerSettings[0] as $key => $setting) {
+    $list_info->list_info['ServerSettings'][$key] = _sharepoint_get_value($setting);
+  }
+  $list_info->view_fields = _sharepoint_traverse_field_info($xml->View->ViewFields->FieldRef);
+  return $list_info;
+}
+
+function _sharepoint_traverse_field_info($field_info) {
+  $fields = array();
+  foreach ($field_info as $data) {
+    $fields[] = _sharepoint_get_attributes($data);
+  }
+  return $fields;
+}
+
+/**
+ * Get all attributes for a field.
+ * @param SimpleXMLElement $element
+ */
+function _sharepoint_get_attributes($element) {
+  $field = array();
+  foreach ($element->attributes() as $key => $attribute) {
+    $field[$key] = _sharepoint_get_value($attribute);
+  }
+  return $field;
+}
+
+/**
+ * Convert a sharepoint value to the right data type,
+ * e.g. string, boolean...
+ */
+function _sharepoint_get_value($sp_value) {
+  // Is this a boolean?
+  return strtolower($sp_value) == 'true' || strtolower($sp_value) == 'false' ? ($sp_value == 'TRUE') : (string)$sp_value;
+
+}
+
+/**
+ * Implementation of hook_feeds_plugins().
+ */
 function sharepoint_feeds_plugins() {
   $info = array();
   $path = drupal_get_path('module', 'sharepoint') . '/feeds';
@@ -281,6 +334,17 @@ function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   }
 }
 
+/**
+ * Implementation of hook_views_api().
+ */
+function sharepoint_views_api() {
+  return array(
+    'api' => 3.0,
+    'path' => drupal_get_path('module', 'sharepoint') . '/views',
+  );
+}
+
+// this should be removed once the search hook works...
 function sharepoint_searchtest()
 {
     $client = sharepoint_get_client('search');   
@@ -296,38 +360,32 @@ function sharepoint_get_spsearch_result($soapClient, $keys) {
   );
   try {
 
-		var_dump($parameters);
+		
 		$response = $soapClient->Query($parameters)->QueryResult;
-		var_dump($response);
 	
 		$sxml = simplexml_load_string($response);
-		print_r($sxml);
-		/*
-		foreach ($sxml as $list) {
-			print_r($list);
-		}
-		*/
-		// add result to array
-		$results[] = array(
-				'link' => url('node/1', array('absolute' => TRUE)), 
-				'type' => check_plain('node'), 
-				'title' => 'search test result', 
-				'user' => theme('admin'),
-				'date' => getdate(), 
-				//'node' => $node, 
-				//'extra' => $extra, 
-				//'score' => $item->calculated_score, 
-				'snippet' => 'snippet',
-				//search_excerpt($keys, $node->body),
-		);
-
-
 		
+		foreach ($sxml->Response->Range->Results->Document as $res) {
+			$results[] = array(
+					'link' => url($res->Action->LinkUrl, array('absolute' => TRUE)), 
+					//'type' => check_plain('node'), 
+					'title' => $res->Title, 
+					//'user' => theme('admin'),
+					'date' => getdate(), 
+					//'node' => $node, 
+					//'extra' => $extra, 
+					'score' => $res["@attributes"]["relevance"], 
+					//'snippet' => 'snippet',
+					//search_excerpt($keys, $node->body),
+			);
+			
+		}
 	}
 	catch(SoapFault $fault) {
   	echo 'Fault code: '.$fault->faultcode;
   	echo 'Fault string: '.$fault->faultstring;
   }
+	print_r($results);
 	return $results;
 }
 
