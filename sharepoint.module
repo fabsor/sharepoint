@@ -211,8 +211,14 @@ function _sharepoint_get_attributes($element) {
  */
 function _sharepoint_get_value($sp_value) {
   // Is this a boolean?
-  return strtolower($sp_value) == 'true' || strtolower($sp_value) == 'false' ? ($sp_value == 'TRUE') : (string)$sp_value;
-
+  $sp_value = strtolower($sp_value) == 'true' || strtolower($sp_value) == 'false' ? ($sp_value == 'TRUE') : (string)$sp_value;
+  // It totally was! Let's not do anything more here then.
+  if (is_bool($sp_value)) {
+    return $sp_value;
+  }
+  // We can't deal with references to other data currently,
+  // so let's just strip it out for now.
+  return preg_replace('/(.*);#/', '', $sp_value, 1);
 }
 
 /**
