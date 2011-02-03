@@ -45,16 +45,20 @@ class views_plugin_query_sharepoint extends views_plugin_query {
   function execute(&$view) {
     $start = microtime();
     
-    $this->request->execute();
+    $client = sharepoint_get_client('lists');
+    $items = sharepoint_get_splist_items($client, 'Test');
+    
+    foreach ($items->items as $key => $item) {
+      $view->result[$key] = (object) $item;
+    }
 
     // Set row counter and execute time
-    $view->total_rows = count($data->{'@attr'}->total);
+    $view->total_rows = count($items->ItemCount);
     $view->execute_time = microtime() - $start;
 
     // Someday we may have a pager but not today
     $view->pager['current_page'] = 0;
     
-  //  kpr($view);
   }
 
   function option_definition() {

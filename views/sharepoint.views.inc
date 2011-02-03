@@ -19,6 +19,24 @@ function sharepoint_views_data() {
     'help' => t('Query Sharepoint data.'),
     'query class' => 'views_plugin_query_sharepoint'
   );
+  $data['sharepoint']['num_records'] = array(
+    'title' => t('Number of Records'),
+    'help' => t('The number of records you want to return.'),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric_sharepoint',
+      'sharepoint' => array(
+        'arg' => 'num_records',
+       ),
+    ),
+  );
+
+  $data['sharepoint']['ows_LinkFilename'] = array(
+    'title' => t('Filename'),
+    'help' => t('The file name of this list item.'),
+    'field' => array(
+      'handler' => 'views_handler_field_sharepoint',
+    ),
+  );
 
   return $data;
 }
@@ -40,3 +58,21 @@ function sharepoint_views_plugins() {
   );
 }
 
+/**
+ * Implementation of hook_views_handlers().
+ */
+function sharepoint_views_handlers() {
+  return array(
+    'info' => array(
+      'path' => drupal_get_path('module', 'sharepoint') . '/views/handlers',
+    ),
+    'handlers' => array(
+      'views_handler_filter_numeric_sharepoint' => array(
+        'parent' => 'views_handler_filter_numeric',
+      ),
+      'views_handler_field_sharepoint' => array(
+        'parent' => 'views_handler_field',
+      ),
+    ),
+  );
+}
