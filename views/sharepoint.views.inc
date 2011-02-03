@@ -17,24 +17,10 @@ function sharepoint_views_data() {
   $data['sharepoint']['table']['base'] = array(
     'title' => t('Sharepoint data'),
     'help' => t('Query Sharepoint data.'),
-    'query class' => 'sharepoint_views_plugin_query'
+    'query class' => 'views_plugin_query_sharepoint'
   );
 
   return $data;
-}
-
-/**
- * Implementation of hook_views_handlers().
- */
-function sharepoint_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'sharepoint') . '/views/handlers',
-    ),
-    'handlers' => array(
-
-    ),
-  );
 }
 
 /**
@@ -44,10 +30,10 @@ function sharepoint_views_plugins() {
   return array(
     'module' => 'sharepoint',
     'query' => array(
-      'sharepoint_views_plugin_query' => array(
+      'views_plugin_query_sharepoint' => array(
         'title' => t('Sharepoint Query'),
         'help' => t('Sharepoint query object.'),
-        'handler' => 'sharepoint_views_plugin_query',
+        'handler' => 'views_plugin_query_sharepoint',
         'path' => drupal_get_path('module', 'sharepoint') .'/views/plugins',
       ),
     ),
