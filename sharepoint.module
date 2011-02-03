@@ -39,6 +39,15 @@ function sharepoint_menu() {
     'access arguments' => user_access('access sharepoint soap module'),
     'type' => MENU_CALLBACK,
     );
+
+		// This item should be removed when the search hooks is working
+		$items['sharepoint/search'] = array(
+    'title' => t('Sharepoint Search Page'),
+    //'description' => t('Page for testing the connection with the sharepoint bus'),
+    'page callback' => 'sharepoint_searchtest',
+    'access arguments' => user_access('access sharepoint soap module'),
+    'type' => MENU_CALLBACK,
+    );
   
   return $items;
 }
@@ -63,7 +72,7 @@ function sharepoint_admin_stndsett() {
   );
   
   $form['sharepoint_password'] = array(
-    '#type' => 'textfield',
+    '#type' => 'password',
     '#title' => t('Password'),
     '#default_value' =>  variable_get('sharepoint_password', ''),
     '#size' => 100,
@@ -250,6 +259,26 @@ function sharepoint_feeds_plugins() {
   return $info;
 }
 
+
+/**
+* Implementation of hook_search_info().
+*/
+function sharepoint_search_info(){
+  return array(
+    'title' => 'Sharepoint Content', 
+    'path' => 'sp', 
+//    'conditions_callback' => 'sample_search_conditions_callback',
+  );
+}
+/**
+* Implementation of hook_search_execute().
+*/
+function sharepoint_search_execute($keys,$conditions){
+    $client = sharepoint_get_client('search');
+    return(sharepoint_get_spsearch_result($client,$keys));
+}
+
+
 function sharepoint_download($file_source, $file_target) {
        $rh = fopen($file_source, 'rb');
         $wh = fopen($file_target, 'wb');
@@ -285,6 +314,8 @@ function sharepoint_get_client($service) {
   return $soapClient;
 }
 
+
+
 function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   $lists = array();
   
@@ -318,3 +349,49 @@ function sharepoint_views_api() {
     'path' => drupal_get_path('module', 'sharepoint') . '/views',
   );
 }
+
+// this should be removed once the search hook works...
+function sharepoint_searchtest()
+{
+    $client = sharepoint_get_client('search');   
+		sharepoint_get_spsearch_result($client,array("a"));
+
+}
+
+function sharepoint_get_spsearch_result($soapClient, $keys) {
+	$results[] = array();
+  
+	$parameters = array(
+    'queryXml' => "<QueryPacket xmlns='urn:Microsoft.Search.Query'><Query><Context><QueryText language='en-US' type='STRING'>".implode(',',$keys)."</QueryText></Context></Query></QueryPacket>",
+  );
+  try {
+
+		
+		$response = $soapClient->Query($parameters)->QueryResult;
+	
+		$sxml = simplexml_load_string($response);
+		
+		foreach ($sxml->Response->Range->Results->Document as $res) {
+			$results[] = array(
+					'link' => url($res->Action->LinkUrl, array('absolute' => TRUE)), 
+					//'type' => check_plain('node'), 
+					'title' => $res->Title, 
+					//'user' => theme('admin'),
+					'date' => getdate(), 
+					//'node' => $node, 
+					//'extra' => $extra, 
+					'score' => $res["@attributes"]["relevance"], 
+					//'snippet' => 'snippet',
+					//search_excerpt($keys, $node->body),
+			);
+			
+		}
+	}
+	catch(SoapFault $fault) {
+  	echo 'Fault code: '.$fault->faultcode;
+  	echo 'Fault string: '.$fault->faultstring;
+  }
+	print_r($results);
+	return $results;
+}
+
