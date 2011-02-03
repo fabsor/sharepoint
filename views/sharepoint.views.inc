@@ -17,10 +17,45 @@ function sharepoint_views_data() {
   $data['sharepoint']['table']['base'] = array(
     'title' => t('Sharepoint data'),
     'help' => t('Query Sharepoint data.'),
-    'query class' => 'sharepoint_views_plugin_query'
+    'query class' => 'views_plugin_query_sharepoint'
+  );
+  $data['sharepoint']['num_records'] = array(
+    'title' => t('Number of Records'),
+    'help' => t('The number of records you want to return.'),
+    'filter' => array(
+      'handler' => 'views_handler_filter_numeric_sharepoint',
+      'sharepoint' => array(
+        'arg' => 'num_records',
+       ),
+    ),
+  );
+
+  $data['sharepoint']['ows_LinkFilename'] = array(
+    'title' => t('Filename'),
+    'help' => t('The file name of this list item.'),
+    'field' => array(
+      'handler' => 'views_handler_field_sharepoint',
+    ),
   );
 
   return $data;
+}
+
+/**
+ * Implementation of hook_views_plugins().
+ */
+function sharepoint_views_plugins() {
+  return array(
+    'module' => 'sharepoint',
+    'query' => array(
+      'views_plugin_query_sharepoint' => array(
+        'title' => t('Sharepoint Query'),
+        'help' => t('Sharepoint query object.'),
+        'handler' => 'views_plugin_query_sharepoint',
+        'path' => drupal_get_path('module', 'sharepoint') .'/views/plugins',
+      ),
+    ),
+  );
 }
 
 /**
@@ -32,25 +67,12 @@ function sharepoint_views_handlers() {
       'path' => drupal_get_path('module', 'sharepoint') . '/views/handlers',
     ),
     'handlers' => array(
-
-    ),
-  );
-}
-
-/**
- * Implementation of hook_views_plugins().
- */
-function sharepoint_views_plugins() {
-  return array(
-    'module' => 'sharepoint',
-    'query' => array(
-      'sharepoint_views_plugin_query' => array(
-        'title' => t('Sharepoint Query'),
-        'help' => t('Sharepoint query object.'),
-        'handler' => 'sharepoint_views_plugin_query',
-        'path' => drupal_get_path('module', 'sharepoint') .'/views/plugins',
+      'views_handler_filter_numeric_sharepoint' => array(
+        'parent' => 'views_handler_filter_numeric',
+      ),
+      'views_handler_field_sharepoint' => array(
+        'parent' => 'views_handler_field',
       ),
     ),
   );
 }
-
