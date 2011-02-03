@@ -30,6 +30,14 @@ function sharepoint_views_data() {
     ),
   );
 
+  $data['sharepoint']['title'] = array(
+    'title' => t('Title'),
+    'help' => t('The title of this list item.'),
+    'field' => array(
+      'handler' => 'views_handler_field_sharepoint',
+    ),
+  );
+
   return $data;
 }
 
@@ -61,6 +69,9 @@ function sharepoint_views_handlers() {
     'handlers' => array(
       'views_handler_filter_numeric_sharepoint' => array(
         'parent' => 'views_handler_filter_numeric',
+      ),
+      'views_handler_field_sharepoint' => array(
+        'parent' => 'views_handler_field',
       ),
     ),
   );
