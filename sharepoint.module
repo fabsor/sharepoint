@@ -306,6 +306,51 @@ function sharepoint_get_client($service) {
 
   return $soapClient;
 }
+/**
+ * Get the absolute path to a sharepoint item file.
+ * @param $item the list item
+ * @return string the file path.
+ */
+function sharepoint_get_splist_item_filepath($item) {
+  $path = variable_get('sharepoint_serviceurl','') . '/';
+  $parts = explode('/', _sharepoint_get_value($item['ows_FileRef']));
+  foreach ($parts as &$part) {
+    $part = rawurlencode($part);
+  }
+  return $path . implode('/', $parts);
+}
+
+/**
+ * Download a sharepoint file.
+ * @param $list_info the information about the list.
+ * @param $item the item containing the file.
+ * @param $location the location to download the file to.
+ */
+function sharepoint_download_splist_item_document($item, $location = 'public://sharepoint') {
+  if (isset($item['ows_FileRef'])) {
+    $filepath = sharepoint_get_splist_item_filepath($item);
+    // Download the file.
+    $options = array(
+      'headers' => array(
+        'Authorization' => 'Basic ' .
+          base64_encode(variable_get('sharepoint_username', '') . ':' .
+                variable_get('sharepoint_password', '')),
+      ),
+    );
+    
+    $response = drupal_http_request($filepath, $options);
+    if ($response->code == 200 || $response->code == 201) {
+      // Save the data.
+      $local_path = $location . basename($filepath);
+      file_save_data($response->data, $local_path);
+      return $local_path;
+    }
+    else {
+      return $response->code;
+    }
+  }
+  return FALSE;
+}
 
 
 
