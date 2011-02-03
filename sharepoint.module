@@ -30,16 +30,7 @@ function sharepoint_menu() {
     'page arguments' => array('sharepoint_admin_lists'),
     'access arguments' => array('administer sharepoint soap module'),
     'type' => MENU_LOCAL_TASK,
-  );
-
-  $items['sharepoint'] = array(
-    'title' => t('Sharepoint Test Page'),
-    //'description' => t('Page for testing the connection with the sharepoint bus'),
-    'page callback' => 'sharepoint_sync',
-    'access arguments' => user_access('access sharepoint soap module'),
-    'type' => MENU_CALLBACK,
-    );
-  
+  );  
   return $items;
 }
 
@@ -75,10 +66,15 @@ function sharepoint_admin_stndsett() {
 }
 
 function sharepoint_admin_lists() {
-  $client = sharepoint_get_client('lists');
-  $lists = sharepoint_get_splist_collection($client);
-  foreach ($lists as $id => $list) {
-    $options[$id] = $list['Title'];
+  $options = array();
+  try {
+    $client = sharepoint_get_client('lists');
+    $lists = sharepoint_get_splist_collection($client);
+    foreach ($lists as $id => $list) {
+      $options[$id] = $list['Title'];
+    }
+  } catch(SharePointException $exception) {
+    drupal_set_message(t('The connection to the SharePoint server could not be established!'), 'error');
   }
 
   $form['sharepoint_listname'] = array(
@@ -119,12 +115,6 @@ function sharepoint_admin_lists() {
   return system_settings_form($form);
 }
 
-function sharepoint_sync() {
-  $soapClient = sharepoint_get_client('lists');
-  $info = sharepoint_get_splist_info($soapClient, 'Test', '');
-  var_dump($info);
-}
-
 function sharepoint_get_splist_items($client, $listname, $view = '', $query = '', $rowLimit = 10, $queryOptions = NULL, $webId = NULL) {
   $parameters = array(
     'listName' => $listname,
@@ -159,8 +149,8 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
     }
     $list->items = $items;
   }
-  catch(Exception $exception) {
-  	// Error handling should be handled in a central place instead of here.
+  catch(SoapFault $fault) {
+    _sharepoint_throw_connection_error($fault);
   }
   return  $list;
 }
@@ -168,6 +158,10 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
 /**
  * Get information for a list.
  * You can optionally pass in  view and get data for just the view.
+ * @param SoapClient $client the client to use for fetching the list.
+ * @param string $list the list name. Only Human-readable list names works currently.
+ * @param string $view the view to fetch information on.
+ *
  */
 function sharepoint_get_splist_info($client, $list, $view = '') {
   $data = $client->GetListAndView(array('listName' => $list, 'viewName' => $view));
@@ -187,7 +181,11 @@ function sharepoint_get_splist_info($client, $list, $view = '') {
   $list_info->list_info['ListSettings'] = _sharepoint_get_attributes($xml->List);
   return $list_info;
 }
-
+/**
+ * Traverse field information.
+ * @param SimpleXMLElement $field_info
+ * @return array the field information.
+ */
 function _sharepoint_traverse_field_info($field_info) {
   $fields = array();
   foreach ($field_info as $data) {
@@ -211,6 +209,7 @@ function _sharepoint_get_attributes($element) {
 /**
  * Convert a sharepoint value to the right data type,
  * e.g. string, boolean...
+ * @param $sp_value some value from sharepoint.
  */
 function _sharepoint_get_value($sp_value) {
   // Is this a boolean?
@@ -257,41 +256,19 @@ function sharepoint_feeds_plugins() {
 /**
 * Implementation of hook_search_info().
 */
-function sharepoint_search_info(){
+function sharepoint_search_info() {
   return array(
     'title' => 'Sharepoint Content', 
     'path' => 'sharepoint', 
   );
 }
+
 /**
-* Implementation of hook_search_execute().
-*/
-function sharepoint_search_execute($keys,$conditions){
-    $client = sharepoint_get_client('search');
-    return(sharepoint_get_spsearch_result($client,$keys));
-}
-
-
-function sharepoint_download($file_source, $file_target) {
-       $rh = fopen($file_source, 'rb');
-        $wh = fopen($file_target, 'wb');
-        if ($rh===false || $wh===false) {
-			// error reading or opening file
-           return true;
-        }
-        while (!feof($rh)) {
-            if (fwrite($wh, fread($rh, 1024)) === FALSE) {
-                   // 'Download error: Cannot write to file ('.$file_target.')';
-                   return true;
-               }
-        }
-        fclose($rh);
-        fclose($wh);
-        // No error
-        return false;
-    }
-
-function sharepoint_get_client($service) {
+ * Get a sharepoint client pointing to a particular sharepoint web service.
+ * @param string $service the web service.
+ * @return SoapClient a SoapClient ready for use.
+ */
+function sharepoint_get_client($service = 'lists') {
   //Authentication details
   $authParams = array('login' => variable_get('sharepoint_username',''),
   					'password' => variable_get('sharepoint_password',''),
@@ -300,11 +277,14 @@ function sharepoint_get_client($service) {
 
   /* Path to the Lists.asmx WSDL file */
   $wsdl = variable_get('sharepoint_serviceurl','').'/_vti_bin/'.$service.'.asmx?WSDL';
-  
-  //Creating the SOAP client and initializing the GetListItems method parameters
-  $soapClient = new SoapClient($wsdl, $authParams);
-
-  return $soapClient;
+  try {
+    //Creating the SOAP client and initializing the GetListItems method parameters
+    $soapClient = new SoapClient($wsdl, $authParams);
+    return $soapClient;
+  }
+  catch(SoapFault $fault) {
+    _sharepoint_throw_connection_error($fault);
+  }
 }
 /**
  * Get the absolute path to a sharepoint item file.
@@ -337,8 +317,8 @@ function sharepoint_download_splist_item_document($item, $location = 'public://s
                 variable_get('sharepoint_password', '')),
       ),
     );
-    
     $response = drupal_http_request($filepath, $options);
+    
     if ($response->code == 200 || $response->code == 201) {
       // Save the data.
       $local_path = $location . basename($filepath);
@@ -346,7 +326,7 @@ function sharepoint_download_splist_item_document($item, $location = 'public://s
       return $local_path;
     }
     else {
-      return $response->code;
+      throw new SharePointException(t('Could not download file from server. The file was: ') . $filepath, $response->code);
     }
   }
   return FALSE;
@@ -356,7 +336,6 @@ function sharepoint_download_splist_item_document($item, $location = 'public://s
 
 function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   $lists = array();
-  
   try {
     $sxml = simplexml_load_string($soapClient->GetListCollection()->GetListCollectionResult->any);
     foreach ($sxml as $list) {
@@ -373,8 +352,7 @@ function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
     return $lists;
   }
   catch(SoapFault $fault) {
-  	echo 'Fault code: '.$fault->faultcode;
-  	echo 'Fault string: '.$fault->faultstring;
+    _sharepoint_throw_connection_error($fault);
   }
 }
 
@@ -394,35 +372,46 @@ function sharepoint_get_spsearch_result($soapClient, $keys) {
     'queryXml' => "<QueryPacket xmlns='urn:Microsoft.Search.Query'><Query><Range><StartAt>1</StartAt><Count>50</Count></Range><Context><QueryText	type='STRING'>".$keys."</QueryText></Context></Query></QueryPacket>",
   );
   try {
-		
 		$response = $soapClient->Query($parameters)->QueryResult;
-
 		$sxml = simplexml_load_string($response);
 
 		// If the result does not return any items , don't try to process any further
-		if ($sxml === FALSE || $sxml->Response->Status != 'SUCCESS')
-		{
+		if ($sxml === FALSE || $sxml->Response->Status != 'SUCCESS') {
 			return $results;
 		}
 		foreach ($sxml->Response->Range->Results->Document as $res) {
 			$results[] = array(
-					'link' => url($res->Action->LinkUrl, array('absolute' => TRUE)), 
-					//'type' => check_plain('node'), 
-					'title' => $res->Title, 
-					//'user' => theme('admin'),
-					'date' => strtotime($res->Date), 
-					//'node' => $node, 
-					//'extra' => $extra, 
-					'score' => $res->attributes()->relevance, 
-					'snippet' => 'description of '.$res->Title,
-					//search_excerpt($keys, $node->body),
+		    'link' => url($res->Action->LinkUrl, array('absolute' => TRUE)),
+			  //'type' => check_plain('node'),
+			  'title' => $res->Title,
+				//'user' => theme('admin'),
+		    'date' => strtotime($res->Date),
+			  //'node' => $node,
+				//'extra' => $extra, 
+				'score' => $res->attributes()->relevance, 
+				'snippet' => 'description of '.$res->Title,
+				//search_excerpt($keys, $node->body),
 			);			
 		}
 	}
 	catch(SoapFault $fault) {
-  	echo 'Fault code: '.$fault->faultcode;
-  	echo 'Fault string: '.$fault->faultstring;
+    _sharepoint_throw_connection_error($fault);
   }
 	return $results;
 }
+
+function _sharepoint_throw_connection_error(SoapFault $fault) {
+  throw new SharePointConnectionException(t('Could not connect to SharePoint Server:') . $fault->getMessage());
+}
+
+/**
+ * Empty SharePointException classes, that might be extended
+ * later.
+ */
+
+class SharePointException extends Exception {}
+
+class SharePointConnectionException extends SharePointException {}
+
+class SharePointParseException extends SharePointException {}
 

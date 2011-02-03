@@ -26,6 +26,7 @@ class SharePointViewFetcherResult extends FeedsFetcherResult {
    * Overrides FeedsFetcherResult::getRaw();
    */
   public function getRaw() {
+    // Let's just fail miserably if we don't have a connection.
     $client = sharepoint_get_client('lists');
     return sharepoint_get_splist_items($client, $this->list, $this->view);
   }
@@ -59,12 +60,18 @@ class SharePointViewFetcher extends FeedsFetcher {
    */
   public function configForm(&$form_state) {
     $form = array();
-    $client = sharepoint_get_client('lists');
-    $lists = sharepoint_get_splist_collection($client);
-    foreach ($lists as $id => $list) {
-      // We need to use the Human Readable Name here, because we can't get
-      // the list information otherwise.
-      $options[$list['Title']] = $list['Title'];
+    $options = array();
+    try {
+      $client = sharepoint_get_client('lists');
+      $lists = sharepoint_get_splist_collection($client);
+      foreach ($lists as $id => $list) {
+        // We need to use the Human Readable Name here, because we can't get
+        // the list information otherwise.
+        $options[$list['Title']] = $list['Title'];
+      }
+    }
+    catch(SharePointException $error) {
+      drupal_set_message(t('The connection to the SharePoint server could not be established!'), 'error');
     }
 
     $form['list'] = array(
