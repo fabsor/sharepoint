@@ -138,7 +138,8 @@ function sharepoint_get_splist_items($client, $listname, $view = '', $query = ''
   $parameters = array(
     'listName' => $listname,
     'view' => $view,
-    'query' => $view,
+    'query' => $query,
+    'viewFields' => '',
     'rowLimit' => $rowLimit,
     'queryOptions' => $queryOptions,
     'webID' => $webId,
@@ -190,7 +191,9 @@ function sharepoint_get_splist_info($client, $list, $view = '') {
   foreach ($xml->List->ServerSettings[0] as $key => $setting) {
     $list_info->list_info['ServerSettings'][$key] = _sharepoint_get_value($setting);
   }
+
   $list_info->view_fields = _sharepoint_traverse_field_info($xml->View->ViewFields->FieldRef);
+  $list_info->list_info['ListSettings'] = _sharepoint_get_attributes($xml->List);
   return $list_info;
 }
 
@@ -306,7 +309,7 @@ function sharepoint_get_client($service) {
   					);
 
   /* Path to the Lists.asmx WSDL file */
-  $wsdl = variable_get('sharepoint_serviceurl','').'/'.$service.'.asmx?WSDL';
+  $wsdl = variable_get('sharepoint_serviceurl','').'/_vti_bin/'.$service.'.asmx?WSDL';
   
   //Creating the SOAP client and initializing the GetListItems method parameters
   $soapClient = new SoapClient($wsdl, $authParams);

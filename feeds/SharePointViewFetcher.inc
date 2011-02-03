@@ -85,7 +85,7 @@ class SharePointViewFetcher extends FeedsFetcher {
       '#description' => t('The name of the view to use'),
     );
 
-    $form['num_records'] = array(
+   $form['num_records'] = array(
     '#type' => 'textfield',
     '#title' => t('Number of records'),
     '#default_value' => $this->config['num_records'],
