@@ -389,16 +389,21 @@ function sharepoint_views_api() {
 }
 
 function sharepoint_get_spsearch_result($soapClient, $keys) {
-  
+  $results = array();	
 	$parameters = array(
-    'queryXml' => "<QueryPacket xmlns='urn:Microsoft.Search.Query'><Query><Context><QueryText language='en-US' type='STRING'>".$keys."</QueryText></Context></Query></QueryPacket>",
+    'queryXml' => "<QueryPacket xmlns='urn:Microsoft.Search.Query'><Query><Range><StartAt>1</StartAt><Count>50</Count></Range><Context><QueryText	type='STRING'>".$keys."</QueryText></Context></Query></QueryPacket>",
   );
   try {
 		
 		$response = $soapClient->Query($parameters)->QueryResult;
 
 		$sxml = simplexml_load_string($response);
-			
+
+		// If the result does not return any items , don't try to process any further
+		if ($sxml === FALSE || $sxml->Response->Status != 'SUCCESS')
+		{
+			return $results;
+		}
 		foreach ($sxml->Response->Range->Results->Document as $res) {
 			$results[] = array(
 					'link' => url($res->Action->LinkUrl, array('absolute' => TRUE)), 
