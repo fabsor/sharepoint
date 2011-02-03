@@ -9,7 +9,7 @@
 /**
  * Views query plugin for the Sharepoint SOAP API.
  */
-class sharepoint_views_plugin_query extends views_plugin_query {
+class views_plugin_query_sharepoint extends views_plugin_query {
  
   // Our argument array. Anything that needs to be passed to the API gets
   // added to this array through the argumet and filter handlers. This array
