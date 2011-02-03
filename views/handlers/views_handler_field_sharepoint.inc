@@ -31,7 +31,7 @@ class views_handler_field_sharepoint extends views_handler_field {
   function render($values) {
     if (isset($values->{$this->options['real_field']})) {
       $value = $values->{$this->options['real_field']};
-      return check_plain($value);
+      return check_plain(_sharepoint_get_value($value));
     }
   }
 
