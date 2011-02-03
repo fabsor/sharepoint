@@ -56,4 +56,51 @@ class views_plugin_query_sharepoint extends views_plugin_query {
     
   //  kpr($view);
   }
+
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['sharepoint_views_server_url'] = array(
+      'default' => '',
+    );
+    $options['sharepoint_views_list_name'] = array(
+      'default' => '',
+    );
+    $options['sharepoint_list_view'] = array(
+      'default' => '',
+    );
+
+    return $options;
+  }
+
+  /**
+   * Add settings for the ui.
+   */
+  function options_form(&$form, &$form_state) {
+    $form['sharepoint_views_server_url'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Base URL'),
+      '#default_value' => $this->options['sharepoint_views_server_url'],
+      '#size' => 100,
+      '#maxlength' => 100,
+      '#description' => t('The base URL to the sharepoint web, including _vti_bin'),
+    );
+
+    $form['sharepoint_views_list_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('List name'),
+      '#default_value' => $this->options['sharepoint_views_list_name'],
+      '#size' => 30,
+      '#maxlength' => 30,
+      '#description' => t('The name of the list whose data you want to retrieve'),
+    );
+
+    $form['sharepoint_server_view'] = array(
+      '#type' => 'textfield',
+      '#title' => t('View'),
+      '#default_value' => $this->options['sharepoint_views_view'],
+      '#size' => 30,
+      '#maxlength' => 30,
+      '#description' => t('The name of the view you wish to use. If not specified the default view will be used.'),
+    );
+  }
 }
