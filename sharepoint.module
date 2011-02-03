@@ -303,3 +303,12 @@ function sharepoint_get_splist_collection($soapClient, $show_hidden = FALSE) {
   }
 }
 
+/**
+ * Implementation of hook_views_api().
+ */
+function sharepoint_views_api() {
+  return array(
+    'api' => 3.0,
+    'path' => drupal_get_path('module', 'sharepoint') . '/views',
+  );
+}
