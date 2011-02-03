@@ -10,8 +10,8 @@
  * Fetcher Result Class for SharePoint Views.
  */
 class SharePointViewFetcherResult extends FeedsFetcherResult {
-  protected $list;
-  protected $view;
+  public $list;
+  public $view;
 
   /**
    * Constructor.
@@ -62,7 +62,9 @@ class SharePointViewFetcher extends FeedsFetcher {
     $client = sharepoint_get_client('lists');
     $lists = sharepoint_get_splist_collection($client);
     foreach ($lists as $id => $list) {
-      $options[$id] = $list['Title'];
+      // We need to use the Human Readable Name here, because we can't get
+      // the list information otherwise.
+      $options[$list['Title']] = $list['Title'];
     }
 
     $form['list'] = array(
