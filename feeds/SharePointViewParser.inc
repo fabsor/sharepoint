@@ -14,10 +14,7 @@ class SharePointViewParser extends FeedsParser {
     // this function.
     $list = $fetcher_result->getRaw();
     $rows = array();
-    foreach ($list->items as $items) {
-      $row['title'] = 'Some Title';
-      $rows[] = $row;
-    }
+    $rows[] = $list->items;
     return $rows;
   }
 
