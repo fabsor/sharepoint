@@ -57,6 +57,10 @@ class views_plugin_query_sharepoint extends views_plugin_query {
     
     foreach ($items->items as $key => $item) {
       $view->result[$key] = (object) $item;
+      $file_path = sharepoint_get_splist_item_filepath($item);
+      if (isset($file_path)) {
+        $view->result[$key]->filepath = $file_path;
+      }
     }
 
     // Set row counter and execute time

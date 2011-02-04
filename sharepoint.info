@@ -4,7 +4,9 @@ description = "Provides methods to communicate with a sharepoint portal and down
 core = 7.x
 dependencies[] = field
 
+files[] = sharepoint.class.inc
 files[] = views/sharepoint.views.inc
 files[] = views/plugins/views_plugin_query_sharepoint.inc
 files[] = views/handlers/views_handler_filter_numeric_sharepoint.inc
 files[] = views/handlers/views_handler_field_sharepoint.inc
+files[] = views/handlers/views_handler_field_sharepoint_file.inc
