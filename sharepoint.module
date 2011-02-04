@@ -6,11 +6,21 @@
  * Sharepoint integration
  */
 
+
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  */
-function sharepoint_perm() {
-  return array('access sharepoint soap module', 'administer sharepoint soap module');
+function linkback_permission() {
+  $perms = array(
+    'access sharepoint soap module' => array(
+      'title' => t('Access sharepoint soap module'),
+    )
+    'administer sharepoint soap module' => array(
+      'title' => t('Administer sharepoint soap module'),
+    ),
+  );
+
+  return $perms;
 }
 
 /**
