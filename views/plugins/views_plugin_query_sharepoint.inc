@@ -15,6 +15,7 @@ class views_plugin_query_sharepoint extends views_plugin_query {
    * Constructor; Create the basic query object and fill with default values.
    */
   function init($base_table, $base_field, $options) {
+    module_load_include('inc', 'sharepoint');
     parent::init($base_table, $base_field, $options);
   }
 

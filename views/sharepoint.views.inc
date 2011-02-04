@@ -76,9 +76,6 @@ function sharepoint_views_handlers() {
       'views_handler_field_sharepoint' => array(
         'parent' => 'views_handler_field',
       ),
-      'views_handler_field_sharepoint_file' => array(
-        'parent' => 'views_handler_field',
-      ),
     ),
   );
 }

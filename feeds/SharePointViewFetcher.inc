@@ -26,6 +26,7 @@ class SharePointViewFetcherResult extends FeedsFetcherResult {
    * Overrides FeedsFetcherResult::getRaw();
    */
   public function getRaw() {
+    module_load_include('inc', 'sharepoint');
     // Let's just fail miserably if we don't have a connection.
     $client = sharepoint_get_client('lists');
     return sharepoint_get_splist_items($client, $this->list, $this->view);
@@ -59,6 +60,7 @@ class SharePointViewFetcher extends FeedsFetcher {
    * Override parent::configForm().
    */
   public function configForm(&$form_state) {
+    module_load_include('inc', 'sharepoint');
     $form = array();
     $options = array();
     try {

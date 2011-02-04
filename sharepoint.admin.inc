@@ -11,7 +11,6 @@
  * Menu callback at admin/config/services/sharepoint
  */
 function sharepoint_server_connection_settings_former() {
-
   $form['sharepoint_server_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Base URL'),
