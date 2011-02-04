@@ -29,6 +29,15 @@ function sharepoint_permission() {
 function sharepoint_menu() {
   $items = array();
 
+  // @TODO: reconsider SP-proxy path.
+  $items['system/sp-proxy'] = array(
+    'title' => 'Sharepoint file download',
+    'page callback' => 'file_download',
+    'page arguments' => array('sharepointProxy'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/config/sharepoint'] = array(
     'title' => t('SharePoint'),
     'description' => t('SharePoint integration settings.'),
