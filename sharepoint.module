@@ -14,7 +14,7 @@ function sharepoint_permission() {
   $perms = array(
     'access sharepoint soap module' => array(
       'title' => t('Access sharepoint soap module'),
-    )
+    ),
     'administer sharepoint soap module' => array(
       'title' => t('Administer sharepoint soap module'),
     ),
