@@ -6,11 +6,21 @@
  * Sharepoint integration
  */
 
+
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  */
-function sharepoint_perm() {
-  return array('access sharepoint soap module', 'administer sharepoint soap module');
+function sharepoint_permission() {
+  $perms = array(
+    'access sharepoint soap module' => array(
+      'title' => t('Access sharepoint soap module'),
+    )
+    'administer sharepoint soap module' => array(
+      'title' => t('Administer sharepoint soap module'),
+    ),
+  );
+
+  return $perms;
 }
 
 /**
@@ -18,6 +28,15 @@ function sharepoint_perm() {
  */
 function sharepoint_menu() {
   $items = array();
+
+  // @TODO: reconsider SP-proxy path.
+  $items['system/sp-proxy'] = array(
+    'title' => 'Sharepoint file download',
+    'page callback' => 'file_download',
+    'page arguments' => array('sharepointProxy'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
 
   $items['admin/config/sharepoint'] = array(
     'title' => t('SharePoint'),
