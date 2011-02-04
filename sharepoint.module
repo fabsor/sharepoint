@@ -10,7 +10,7 @@
 /**
  * Implementation of hook_permission().
  */
-function linkback_permission() {
+function sharepoint_permission() {
   $perms = array(
     'access sharepoint soap module' => array(
       'title' => t('Access sharepoint soap module'),
