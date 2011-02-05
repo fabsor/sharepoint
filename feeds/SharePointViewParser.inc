@@ -33,8 +33,9 @@ class SharePointViewParser extends FeedsParser {
       // and make it absolute.
       if (isset($item['ows_FileRef'])) {
         $row['filepath'] = sharepoint_get_splist_item_filepath($item);
-        //$row['local_file'] = sharepoint_download_splist_item_document($item);
-        
+        if ($this->config['download_files']) {
+          $row['local_file'] = sharepoint_download_splist_item_document($item);
+        }
       }
       $rows[] = $row;
     }
