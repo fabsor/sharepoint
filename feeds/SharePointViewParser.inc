@@ -33,7 +33,8 @@ class SharePointViewParser extends FeedsParser {
       // and make it absolute.
       if (isset($item['ows_FileRef'])) {
         $row['filepath'] = sharepoint_get_splist_item_filepath($item);
-        $row['local_file'] = sharepoint_download_splist_item_document($item);
+        //$row['local_file'] = sharepoint_download_splist_item_document($item);
+        
       }
       $rows[] = $row;
     }
@@ -55,6 +56,7 @@ class SharePointViewParser extends FeedsParser {
    * Override parent::configForm().
    */
   public function configForm(&$form_state) {
+    module_load_include('inc', 'sharepoint');
     $form = array();
     $options = array();
     try {
@@ -104,6 +106,7 @@ class SharePointViewParser extends FeedsParser {
    * Return mapping sources.
    */
   public function getMappingSources() {
+    module_load_include('inc', 'sharepoint');
     $client = sharepoint_get_client('lists');
     $this->list_info = sharepoint_get_splist_info($client, $this->config['list'], '');
     $mappingResources = array();

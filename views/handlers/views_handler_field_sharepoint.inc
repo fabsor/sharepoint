@@ -44,6 +44,7 @@ class views_handler_field_sharepoint extends views_handler_field {
   }
 
   function options_form(&$form, &$form_state) {
+    module_load_include('inc', 'sharepoint');
     //Authentication details
     $authParams = array('login' => 'contoso\Administrator',
     					'password' => 'pass@word1',

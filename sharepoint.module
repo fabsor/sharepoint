@@ -113,6 +113,15 @@ function sharepoint_search_info() {
 }
 
 /**
+* Implementation of hook_search_execute().
+*/
+function sharepoint_search_execute($keys,$conditions){
+  module_load_include('inc', 'sharepoint');
+  $client = sharepoint_get_client('search');
+  return(sharepoint_get_spsearch_result($client,$keys));
+}
+
+/**
  * Implementation of hook_views_api().
  */
 function sharepoint_views_api() {

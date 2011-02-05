@@ -99,3 +99,21 @@ function sharepoint_admin_lists() {
   
   return system_settings_form($form);
 }
+
+/**
+ * Settings form for sharepoint endpoints.
+ */
+function sharepoint_admin_endpoints() {
+  $form = array();
+  $endpoints = variable_get('sharepoint_endpoints', array());
+  return _sharepoint_endpoint_table($endpoints);
+}
+
+function _sharepoint_endpoint_table($endpoints) {
+  $table = array();
+  foreach ($endpoints as $endpoint) {
+    $table[] = array($endpoint['name'], $endpoint['url'],
+        l('admin/config/sharepoint/endpoint/' . $endpoint['name']));
+  }
+  return theme('table', array(array(t('Name'), t('URL'), t('Edit')), $table));
+}
